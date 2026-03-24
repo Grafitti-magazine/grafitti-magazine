@@ -122,13 +122,34 @@ export function Sidebar() {
       <header className="w-full h-18 bg-white border-b border-black flex items-center justify-center sticky top-0 z-200">
         <Link
           href="/"
-          className={`font-cobalt md:text-[44px] text-2xl leading-none text-black mt-1 transition-opacity duration-200 ${
+          onMouseMove={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            e.currentTarget.style.setProperty("--mouse-x", `${x}px`);
+            e.currentTarget.style.setProperty("--mouse-y", `${y}px`);
+          }}
+          className={`font-cobalt md:text-[44px] text-2xl leading-none mt-1 transition-opacity duration-200 relative group ${
             isOpen
               ? "opacity-0 md:opacity-100 pointer-events-none md:pointer-events-auto"
               : "opacity-100"
           }`}
         >
-          გრაფიტი
+          <span className="text-black">გრაფიტი</span>
+          <span
+            className="absolute left-0 top-0 text-transparent bg-clip-text w-full h-full pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+            style={{
+              backgroundImage:
+                "linear-gradient(to right, #237375, #9D2C2F, #2B4A66, #E6B92B)",
+              maskImage:
+                "radial-gradient(circle 80px at var(--mouse-x, 50%) var(--mouse-y, 50%), black 30%, transparent 100%)",
+              WebkitMaskImage:
+                "radial-gradient(circle 80px at var(--mouse-x, 50%) var(--mouse-y, 50%), black 30%, transparent 100%)",
+            }}
+            aria-hidden="true"
+          >
+            გრაფიტი
+          </span>
         </Link>
       </header>
 
