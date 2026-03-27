@@ -130,17 +130,12 @@ export function Sidebar() {
             display: inline-block;
             position: relative;
             color: black;
-            transition:
-              color 0s 1s,
-              transform 0.3s cubic-bezier(0.6, 0.4, 0, 1);
+            transition: color 0s 1s;
           }
           .rainbow-letter:hover,
           .rainbow-letter.hovered-state {
             color: transparent;
-            transition:
-              color 0s,
-              transform 0.3s cubic-bezier(0.6, 0.4, 0, 1);
-            transform: rotate(-10deg) translateY(-4px) scale(1.15);
+            transition: color 0s;
           }
           .rainbow-bg {
             position: absolute;
