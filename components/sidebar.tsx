@@ -6,9 +6,14 @@ import Link from "next/link";
 export function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isSpraying, setIsSpraying] = useState(false);
+  const [colorOffset, setColorOffset] = useState(0);
   const sidebarWidth = 220;
 
   useEffect(() => {
+    // Randomize the rainbow starting point on the client after mount
+    // to prevent React hydration mismatch and keep it dynamic
+    setColorOffset(Math.floor(Math.random() * 17));
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") setIsOpen(false);
     };
@@ -120,36 +125,76 @@ export function Sidebar() {
 
       {/* Top Navbar */}
       <header className="w-full h-18 bg-white border-b border-black flex items-center justify-center sticky top-0 z-200">
+        <style jsx>{`
+          .rainbow-letter {
+            display: inline-block;
+            position: relative;
+            color: black;
+            transition:
+              color 0s 1s,
+              transform 0.3s cubic-bezier(0.6, 0.4, 0, 1);
+          }
+          .rainbow-letter:hover,
+          .rainbow-letter.hovered-state {
+            color: transparent;
+            transition:
+              color 0s,
+              transform 0.3s cubic-bezier(0.6, 0.4, 0, 1);
+            transform: rotate(-10deg) translateY(-4px) scale(1.15);
+          }
+          .rainbow-bg {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+          }
+        `}</style>
         <Link
           href="/"
-          onMouseMove={(e) => {
-            const rect = e.currentTarget.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            e.currentTarget.style.setProperty("--mouse-x", `${x}px`);
-            e.currentTarget.style.setProperty("--mouse-y", `${y}px`);
-          }}
-          className={`font-cobalt md:text-[44px] text-2xl leading-none mt-1 transition-opacity duration-200 relative group ${
+          onMouseEnter={() => setColorOffset(Math.floor(Math.random() * 4))}
+          className={`font-cobalt md:text-[44px] text-2xl leading-none mt-1 transition-opacity duration-200 flex space-x-0 ${
             isOpen
               ? "opacity-0 md:opacity-100 pointer-events-none md:pointer-events-auto"
               : "opacity-100"
           }`}
         >
-          <span className="text-black">გრაფიტი</span>
-          <span
-            className="absolute left-0 top-0 text-transparent bg-clip-text w-full h-full pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-            style={{
-              backgroundImage:
-                "linear-gradient(to right, #237375, #9D2C2F, #2B4A66, #E6B92B)",
-              maskImage:
-                "radial-gradient(circle 80px at var(--mouse-x, 50%) var(--mouse-y, 50%), black 30%, transparent 100%)",
-              WebkitMaskImage:
-                "radial-gradient(circle 80px at var(--mouse-x, 50%) var(--mouse-y, 50%), black 30%, transparent 100%)",
-            }}
-            aria-hidden="true"
-          >
-            გრაფიტი
-          </span>
+          {"გრაფიტი".split("").map((char, i) => {
+            const colors = ["#237375", "#9D2C2F", "#2B4A66", "#E6B92B"];
+            // Solid color block using background color, clipping to text
+            const currentColor = colors[(i + colorOffset) % colors.length];
+            return (
+              <span
+                key={i}
+                className="rainbow-letter"
+                onMouseEnter={(e) => {
+                  const target = e.currentTarget;
+                  target.classList.add("hovered-state");
+                  // Clear the custom class after the intended logical hover duration
+                  // leaving it natural if they are actively holding hover via css :hover
+                  setTimeout(() => {
+                    target.classList.remove("hovered-state");
+                  }, 800);
+                }}
+              >
+                <span
+                  className="rainbow-bg"
+                  style={{
+                    backgroundColor: currentColor,
+                    backgroundImage: "none",
+                  }}
+                  aria-hidden="true"
+                >
+                  {char}
+                </span>
+                {char}
+              </span>
+            );
+          })}
         </Link>
       </header>
 
