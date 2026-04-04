@@ -54,7 +54,7 @@ function VideoCard({
                 cy="60"
                 r="52"
                 stroke="#F2F2F2"
-                stroke-width="5.0"
+                strokeWidth="5.0"
                 fill="none"
               />
               <path
@@ -67,9 +67,9 @@ function VideoCard({
        L64 39
        C58 35, 52 33, 48 36Z"
                 stroke="#F2F2F2"
-                stroke-width="2.5"
+                strokeWidth="2.5"
                 fill="none"
-                stroke-linejoin="round"
+                strokeLinejoin="round"
               />
             </svg>
           </div>

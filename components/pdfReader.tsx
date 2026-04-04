@@ -1,0 +1,333 @@
+"use client";
+
+import React, { useState, useCallback, useRef, useEffect } from "react";
+import { Document, Page, pdfjs } from "react-pdf";
+import "react-pdf/dist/Page/AnnotationLayer.css";
+import "react-pdf/dist/Page/TextLayer.css";
+
+// Set up the worker
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+
+import HTMLFlipBook from "react-pageflip";
+
+// ─── Types ───────────────────────────────────────────────────────────────────
+interface PDFReaderProps {
+  /** URL or base64 data URI of the PDF */
+  fileUrl: string;
+}
+
+// ─── Forward Ref Page Wrapper ──────────────────────────────────────────────────
+const PageContainer = React.forwardRef<HTMLDivElement, any>((props, ref) => {
+  return (
+    <div
+      className="bg-white overflow-hidden flex justify-center relative"
+      ref={ref}
+    >
+      {props.children}
+    </div>
+  );
+});
+PageContainer.displayName = "PageContainer";
+
+// ─── Component ───────────────────────────────────────────────────────────────
+export default function PDFReader({ fileUrl }: PDFReaderProps) {
+  const [numPages, setNumPages] = useState<number>(0);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageWidth, setPageWidth] = useState<number>(600);
+  const [pageHeight, setPageHeight] = useState<number>(848); // default A4 ratio
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [scale, setScale] = useState<number>(1);
+  const [showControls, setShowControls] = useState<boolean>(true);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const controlsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const flipBookRef = useRef<any>(null); // reference to HTMLFlipBook
+
+  const [isMobile, setIsMobile] = useState<boolean>(true);
+  const [animating, setAnimating] = useState<boolean>(false);
+  const [isMuted, setIsMuted] = useState<boolean>(false);
+
+  // Responsive width
+  useEffect(() => {
+    const measure = () => {
+      if (containerRef.current) {
+        const w = containerRef.current.clientWidth;
+        const mobile = w < 768;
+        setIsMobile(mobile);
+
+        // Let's deduce an optimal width/height for the book
+        // Standard A4 aspect ratio is ~ 1:1.414
+        const availableWidth = mobile ? w - 32 : (w - 64) / 2;
+        const wCapped = Math.min(availableWidth, 600);
+        setPageWidth(wCapped);
+        setPageHeight(wCapped * 1.414);
+      }
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (containerRef.current) ro.observe(containerRef.current);
+    return () => ro.disconnect();
+  }, []);
+
+  // Auto-hide controls on mobile after inactivity
+  const resetControlsTimer = useCallback(() => {
+    setShowControls(true);
+    if (controlsTimerRef.current) clearTimeout(controlsTimerRef.current);
+    controlsTimerRef.current = setTimeout(() => setShowControls(false), 3000);
+  }, []);
+
+  useEffect(() => {
+    resetControlsTimer();
+    return () => {
+      if (controlsTimerRef.current) clearTimeout(controlsTimerRef.current);
+    };
+  }, [resetControlsTimer]);
+
+  const goToPage = useCallback(
+    (target: number) => {
+      if (target < 1 || target > numPages || !flipBookRef.current) return;
+      flipBookRef.current.pageFlip().turnToPage(target - 1);
+      setCurrentPage(target);
+      resetControlsTimer();
+    },
+    [numPages, resetControlsTimer],
+  );
+
+  const prevPage = () => {
+    if (!flipBookRef.current) return;
+    flipBookRef.current.pageFlip().flipPrev();
+    resetControlsTimer();
+  };
+
+  const nextPage = () => {
+    if (!flipBookRef.current) return;
+    flipBookRef.current.pageFlip().flipNext();
+    resetControlsTimer();
+  };
+
+  const flipAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      flipAudioRef.current = new Audio("/page-flip.mp3");
+      flipAudioRef.current.volume = 0.4;
+    }
+  }, []);
+
+  const onFlip = useCallback((e: any) => {
+    setCurrentPage(e.data + 1); // e.data is the 0-indexed page index
+  }, []);
+
+  const onChangeState = useCallback((e: any) => {
+    const isFlipping = e.data === "flipping";
+    setAnimating(isFlipping);
+    
+    if (isFlipping && flipAudioRef.current && !isMuted) {
+      // Reset sound to start and play
+      flipAudioRef.current.currentTime = 0;
+      flipAudioRef.current.play().catch((err) => {
+        // Ignore autoplay errors if user hasn't interacted yet
+        console.debug("Autoplay prevented:", err);
+      });
+    }
+  }, [isMuted]);
+
+  // Swipe support
+  const touchStartX = useRef<number>(0);
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    resetControlsTimer();
+  };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    if (Math.abs(dx) > 50) dx < 0 ? nextPage() : prevPage();
+  };
+
+  // Keyboard
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "ArrowRight" || e.key === "ArrowDown") nextPage();
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") prevPage();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  });
+
+  const progressPct =
+    numPages > 0 ? ((currentPage - 1) / (numPages - 1)) * 100 : 0;
+
+  const isReading = currentPage > 1;
+
+  return (
+    <>
+      <div
+        className="flex w-full flex-col font-serif text-gray-900 bg-transparent dark:text-gray-100"
+        ref={containerRef}
+        onMouseMove={resetControlsTimer}
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+      >
+      {/* ── Progress ── */}
+        {numPages > 0 && currentPage > 1 && (
+          <div className="fixed bottom-0 left-0 right-0 z-50 flex h-2 gap-[2px] bg-black/10 dark:bg-white/5">
+            {Array.from({ length: numPages }).map((_, i) => {
+              const colors = ["#237375", "#9D2C2F", "#2B4A66", "#E6B92B"];
+              return (
+                <div
+                  key={i}
+                  className="h-full flex-1 transition-all duration-300"
+                  style={{
+                    backgroundColor: i < currentPage ? colors[i % colors.length] : "transparent",
+                    opacity: i < currentPage ? 0.8 : 0
+                  }}
+                />
+              );
+            })}
+          </div>
+        )}
+
+        {/* ── Document ── */}
+        <div className="relative flex-1 overflow-visible touch-pan-y">
+          <Document
+            file={fileUrl}
+            onLoadSuccess={({ numPages: n }) => {
+              setNumPages(n);
+              setIsLoading(false);
+            }}
+            onLoadError={() => setIsLoading(false)}
+            loading={
+              <div className="p-8">
+                <div className="mx-auto aspect-[0.707] w-full max-w-[600px] animate-pulse rounded-md bg-gray-200 dark:bg-gray-800" />
+              </div>
+            }
+            error={
+              <div className="flex flex-col items-center justify-center gap-3 p-12 text-gray-500 italic">
+                <span className="text-4xl opacity-40">📄</span>
+                <span>Could not load this document.</span>
+              </div>
+            }
+          >
+            {!isLoading && numPages > 0 && (
+              <div 
+                className={`flex justify-center p-4 lg:p-8 perspective-[2500px] transition-transform duration-700 ease-in-out origin-center relative ${isReading ? "z-40" : "z-10"}`} 
+                key={pageWidth}
+                style={{
+                  transform: (!isMobile && !isReading) 
+                    ? `translateX(-${(pageWidth * scale) / 2}px) scale(1)` 
+                    : `translateX(0px) scale(${isReading ? (isMobile ? 1.05 : 1.15) : 1})`
+                }}
+              >
+                {/* @ts-ignore - react-pageflip typings are incomplete */}
+                <HTMLFlipBook
+                  width={pageWidth * scale}
+                  height={pageHeight * scale}
+                  size="fixed"
+                  minWidth={300}
+                  maxWidth={1000}
+                  minHeight={400}
+                  maxHeight={1500}
+                  maxShadowOpacity={0.15}
+                  flippingTime={600}
+                  showCover={true}
+                  mobileScrollSupport={true}
+                  onFlip={onFlip}
+                  onChangeState={onChangeState}
+                  className="mx-auto"
+                  style={{ margin: "0 auto" }}
+                  ref={flipBookRef}
+                  usePortrait={isMobile}
+                >
+                  {Array.from(new Array(numPages), (el, index) => (
+                    <PageContainer key={index}>
+                      <Page
+                        pageNumber={index + 1}
+                        width={pageWidth * scale}
+                        renderTextLayer={true}
+                        renderAnnotationLayer={true}
+                      />
+                    </PageContainer>
+                  ))}
+                </HTMLFlipBook>
+              </div>
+            )}
+          </Document>
+        </div>
+
+        {/* ── Controls ── */}
+        {numPages > 0 && currentPage > 1 && (
+          <nav
+            className={`fixed bottom-4 left-1/2 -translate-x-1/2 z-[60] flex flex-row items-center justify-center gap-2 sm:gap-3 transition-all duration-300 ${
+              !showControls ? "pointer-events-none translate-y-4 opacity-0" : ""
+            }`}
+          >
+            <button
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/20 backdrop-blur-2xl border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.15)] text-black transition-all hover:scale-105 hover:bg-white/40 hover:text-black active:scale-95 disabled:pointer-events-none disabled:opacity-30 dark:bg-black/30 dark:border-white/5 dark:text-white dark:hover:bg-black/50 dark:hover:text-white drop-shadow-md"
+              onClick={prevPage}
+              disabled={currentPage <= 1 || animating}
+              aria-label="Previous page"
+            >
+              ←
+            </button>
+
+            <div className="flex shrink-0 items-center justify-center gap-1.5 px-3 h-10 rounded-full bg-white/20 backdrop-blur-2xl border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.15)] drop-shadow-md dark:bg-black/30 dark:border-white/5">
+              <div className="group relative flex items-center">
+                <input
+                  className="h-7 w-[3.5rem] rounded-full border border-white/40 bg-white/30 backdrop-blur-sm text-center font-mono text-xs outline-none transition-colors focus:bg-white/80 focus:border-white/60 dark:border-white/10 dark:bg-black/40 dark:focus:bg-black/70 [-moz-appearance:textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none shadow-inner text-black dark:text-white"
+                  type="number"
+                  min={1}
+                  max={numPages}
+                  value={currentPage}
+                  onChange={(e) => {
+                    const v = parseInt(e.target.value, 10);
+                    if (!isNaN(v)) goToPage(v);
+                  }}
+                  disabled={animating}
+                  aria-label="Jump to page"
+                />
+                
+                {/* Tooltip for clicking pages */}
+                <div className="pointer-events-none absolute -top-14 left-1/2 -translate-x-1/2 w-max rounded-md bg-black/80 backdrop-blur-md px-3 py-2 text-xs text-white opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:bg-white/80 dark:text-black border border-white/10 dark:border-black/10">
+                  ფურცლებზე დაჭერითაც შეგიძლიათ გადაფურცვლა
+                  <div className="absolute left-1/2 top-full -translate-x-1/2 border-[5px] border-transparent border-t-black/80 dark:border-t-white/80"></div>
+                </div>
+              </div>
+              
+              <span className="font-mono text-xs font-semibold text-black/80 dark:text-white/80">
+                / {numPages}
+              </span>
+            </div>
+
+            <button
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/20 backdrop-blur-2xl border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.15)] text-black transition-all hover:scale-105 hover:bg-white/40 hover:text-black active:scale-95 disabled:pointer-events-none disabled:opacity-30 dark:bg-black/30 dark:border-white/5 dark:text-white dark:hover:bg-black/50 dark:hover:text-white drop-shadow-md"
+              onClick={nextPage}
+              disabled={currentPage >= numPages || animating}
+              aria-label="Next page"
+            >
+              →
+            </button>
+
+            <button
+              onClick={() => setIsMuted(!isMuted)}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/20 backdrop-blur-2xl border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.15)] text-black transition-all hover:scale-105 hover:bg-white/40 hover:text-black active:scale-95 dark:bg-black/30 dark:border-white/5 dark:text-white dark:hover:bg-black/50 dark:hover:text-white drop-shadow-md"
+              aria-label={isMuted ? "Unmute page flip sound" : "Mute page flip sound"}
+            >
+              {isMuted ? (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="1" y1="1" x2="23" y2="23" />
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                  <line x1="23" y1="9" x2="17" y2="15" />
+                  <line x1="17" y1="9" x2="23" y2="15" />
+                </svg>
+              ) : (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
+                </svg>
+              )}
+            </button>
+          </nav>
+        )}
+      </div>
+    </>
+  );
+}
