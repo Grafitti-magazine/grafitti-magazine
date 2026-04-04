@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { Carousel } from "@/components/carousel";
 
 export default function Home() {
   return (
@@ -13,6 +14,15 @@ export default function Home() {
           className="w-full h-auto object-cover shadow-2xl"
         />
       </div>
+
+      {/* გამყოფი ხაზი */}
+      <div className="w-screen border-t border-black mt-10" />
+      
+      <div className="py-10">
+        <Carousel />
+      </div>
+
     </div>
   );
 }
+
