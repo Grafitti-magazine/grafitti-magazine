@@ -118,19 +118,22 @@ export default function PDFReader({ fileUrl }: PDFReaderProps) {
     setCurrentPage(e.data + 1); // e.data is the 0-indexed page index
   }, []);
 
-  const onChangeState = useCallback((e: any) => {
-    const isFlipping = e.data === "flipping";
-    setAnimating(isFlipping);
-    
-    if (isFlipping && flipAudioRef.current && !isMuted) {
-      // Reset sound to start and play
-      flipAudioRef.current.currentTime = 0;
-      flipAudioRef.current.play().catch((err) => {
-        // Ignore autoplay errors if user hasn't interacted yet
-        console.debug("Autoplay prevented:", err);
-      });
-    }
-  }, [isMuted]);
+  const onChangeState = useCallback(
+    (e: any) => {
+      const isFlipping = e.data === "flipping";
+      setAnimating(isFlipping);
+
+      if (isFlipping && flipAudioRef.current && !isMuted) {
+        // Reset sound to start and play
+        flipAudioRef.current.currentTime = 0;
+        flipAudioRef.current.play().catch((err) => {
+          // Ignore autoplay errors if user hasn't interacted yet
+          console.debug("Autoplay prevented:", err);
+        });
+      }
+    },
+    [isMuted],
+  );
 
   // Swipe support
   const touchStartX = useRef<number>(0);
@@ -167,7 +170,7 @@ export default function PDFReader({ fileUrl }: PDFReaderProps) {
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
       >
-      {/* ── Progress ── */}
+        {/* ── Progress ── */}
         {numPages > 0 && currentPage > 1 && (
           <div className="fixed bottom-0 left-0 right-0 z-50 flex h-2 gap-[2px] bg-black/10 dark:bg-white/5">
             {Array.from({ length: numPages }).map((_, i) => {
@@ -177,8 +180,11 @@ export default function PDFReader({ fileUrl }: PDFReaderProps) {
                   key={i}
                   className="h-full flex-1 transition-all duration-300"
                   style={{
-                    backgroundColor: i < currentPage ? colors[i % colors.length] : "transparent",
-                    opacity: i < currentPage ? 0.8 : 0
+                    backgroundColor:
+                      i < currentPage
+                        ? colors[i % colors.length]
+                        : "transparent",
+                    opacity: i < currentPage ? 0.8 : 0,
                   }}
                 />
               );
@@ -208,13 +214,14 @@ export default function PDFReader({ fileUrl }: PDFReaderProps) {
             }
           >
             {!isLoading && numPages > 0 && (
-              <div 
-                className={`flex justify-center p-4 lg:p-8 perspective-[2500px] transition-transform duration-700 ease-in-out origin-center relative ${isReading ? "z-40" : "z-10"}`} 
+              <div
+                className={`flex justify-center p-4 lg:p-8 perspective-[2500px] transition-transform duration-700 ease-in-out origin-center relative ${isReading ? "z-40" : "z-10"}`}
                 key={pageWidth}
                 style={{
-                  transform: (!isMobile && !isReading) 
-                    ? `translateX(-${(pageWidth * scale) / 2}px) scale(1)` 
-                    : `translateX(0px) scale(${isReading ? (isMobile ? 1.05 : 1.15) : 1})`
+                  transform:
+                    !isMobile && !isReading
+                      ? `translateX(-${(pageWidth * scale) / 2}px) scale(1)`
+                      : `translateX(0px) scale(${isReading ? (isMobile ? 1.05 : 1.15) : 1})`,
                 }}
               >
                 {/* @ts-ignore - react-pageflip typings are incomplete */}
@@ -284,14 +291,14 @@ export default function PDFReader({ fileUrl }: PDFReaderProps) {
                   disabled={animating}
                   aria-label="Jump to page"
                 />
-                
+
                 {/* Tooltip for clicking pages */}
                 <div className="pointer-events-none absolute -top-14 left-1/2 -translate-x-1/2 w-max rounded-md bg-black/80 backdrop-blur-md px-3 py-2 text-xs text-white opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:bg-white/80 dark:text-black border border-white/10 dark:border-black/10">
                   ფურცლებზე დაჭერითაც შეგიძლიათ გადაფურცვლა
                   <div className="absolute left-1/2 top-full -translate-x-1/2 border-[5px] border-transparent border-t-black/80 dark:border-t-white/80"></div>
                 </div>
               </div>
-              
+
               <span className="font-mono text-xs font-semibold text-black/80 dark:text-white/80">
                 / {numPages}
               </span>
@@ -309,17 +316,37 @@ export default function PDFReader({ fileUrl }: PDFReaderProps) {
             <button
               onClick={() => setIsMuted(!isMuted)}
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/20 backdrop-blur-2xl border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.15)] text-black transition-all hover:scale-105 hover:bg-white/40 hover:text-black active:scale-95 dark:bg-black/30 dark:border-white/5 dark:text-white dark:hover:bg-black/50 dark:hover:text-white drop-shadow-md"
-              aria-label={isMuted ? "Unmute page flip sound" : "Mute page flip sound"}
+              aria-label={
+                isMuted ? "Unmute page flip sound" : "Mute page flip sound"
+              }
             >
               {isMuted ? (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <line x1="1" y1="1" x2="23" y2="23" />
                   <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
                   <line x1="23" y1="9" x2="17" y2="15" />
                   <line x1="17" y1="9" x2="23" y2="15" />
                 </svg>
               ) : (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
                   <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
                 </svg>

@@ -4,7 +4,9 @@ import dynamic from "next/dynamic";
 import Image from "next/image";
 import { Carousel } from "@/components/carousel";
 
-const PDFReader = dynamic(() => import("@/components/pdfReader"), { ssr: false });
+const PDFReader = dynamic(() => import("@/components/pdfReader"), {
+  ssr: false,
+});
 
 export default function Home() {
   return (
@@ -19,8 +21,6 @@ export default function Home() {
       <div className="py-10">
         <Carousel />
       </div>
-
     </div>
   );
 }
-
