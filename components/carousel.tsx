@@ -121,7 +121,7 @@ function ArrowButton({
       ].join(" ")}
     >
       <svg
-        className="w-8 h-8 md:w-[45px] md:h-[45px]"
+        className="w-8 h-8 md:w-11.25 md:h-11.25"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
