@@ -11,7 +11,7 @@ const PDFReader = dynamic(() => import("@/components/pdfReader"), {
 export default function Home() {
   return (
     <div>
-      <div className="flex flex-col flex-1 items-center justify-center font-sans dark:bg-black p-4 w-full">
+      <div className="flex flex-col flex-1 items-center justify-center font-sans p-4 w-full">
         <div className="w-full max-w-6xl mt-4 relative">
           <PDFReader fileUrl="mourning_and_melancholia.pdf" />
         </div>

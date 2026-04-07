@@ -31,7 +31,7 @@ function VideoCard({
     >
       <article className="w-full flex flex-col gap-0 cursor-pointer group">
         {/* Date */}
-        <span className="text-right text-[17px] font-cobalt text-black/80 dark:text-white/50">
+        <span className="text-right text-[17px] font-cobalt text-black/80">
           {date}
         </span>
 
