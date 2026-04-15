@@ -198,7 +198,7 @@ export default function PDFReader({ fileUrl }: PDFReaderProps) {
   return (
     <>
       <div
-        className="relative isolate z-0 flex w-full flex-col bg-transparent font-serif text-gray-900 dark:text-gray-100"
+        className="relative isolate z-0 flex w-full flex-col bg-transparent font-serif text-gray-900"
         ref={containerRef}
         onMouseMove={resetControlsTimer}
         onTouchStart={onTouchStart}
@@ -215,7 +215,7 @@ export default function PDFReader({ fileUrl }: PDFReaderProps) {
             onLoadError={() => setIsLoading(false)}
             loading={
               <div className="p-8">
-                <div className="mx-auto aspect-[0.707] w-full max-w-150 animate-pulse rounded-md bg-gray-200 dark:bg-gray-800" />
+                <div className="mx-auto aspect-[0.707] w-full max-w-150 animate-pulse rounded-md bg-gray-200" />
               </div>
             }
             error={
@@ -289,7 +289,7 @@ export default function PDFReader({ fileUrl }: PDFReaderProps) {
                 setCopied(true);
                 setTimeout(() => setCopied(false), 2000);
               }}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/20 backdrop-blur-2xl border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.15)] text-black transition-all hover:scale-105 hover:bg-white/40 hover:text-black active:scale-95 dark:bg-black/30 dark:border-white/5 dark:text-white dark:hover:bg-black/50 dark:hover:text-white drop-shadow-md"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/20 backdrop-blur-2xl border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.15)] text-black transition-all hover:scale-105 hover:bg-white/40 hover:text-black active:scale-95 drop-shadow-md"
               aria-label="Share"
             >
               {copied ? (
@@ -329,7 +329,7 @@ export default function PDFReader({ fileUrl }: PDFReaderProps) {
             </button>
 
             <button
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/20 backdrop-blur-2xl border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.15)] text-black transition-all hover:scale-105 hover:bg-white/40 hover:text-black active:scale-95 disabled:pointer-events-none disabled:opacity-30 dark:bg-black/30 dark:border-white/5 dark:text-white dark:hover:bg-black/50 dark:hover:text-white drop-shadow-md"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/20 backdrop-blur-2xl border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.15)] text-black transition-all hover:scale-105 hover:bg-white/40 hover:text-black active:scale-95 disabled:pointer-events-none disabled:opacity-30 drop-shadow-md"
               onClick={prevPage}
               disabled={currentPage <= 1 || animating}
               aria-label="Previous page"
@@ -337,10 +337,10 @@ export default function PDFReader({ fileUrl }: PDFReaderProps) {
               ←
             </button>
 
-            <div className="flex shrink-0 items-center justify-center gap-1.5 px-3 h-10 rounded-full bg-white/20 backdrop-blur-2xl border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.15)] drop-shadow-md dark:bg-black/30 dark:border-white/5">
+            <div className="flex shrink-0 items-center justify-center gap-1.5 px-3 h-10 rounded-full bg-white/20 backdrop-blur-2xl border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.15)] drop-shadow-md">
               <div className="group relative flex items-center">
                 <input
-                  className="h-7 w-14 rounded-full border border-white/40 bg-white/30 backdrop-blur-sm text-center font-mono text-xs outline-none transition-colors focus:bg-white/80 focus:border-white/60 dark:border-white/10 dark:bg-black/40 dark:focus:bg-black/70 [-moz-appearance:textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none shadow-inner text-black dark:text-white"
+                  className="h-7 w-14 rounded-full border border-white/40 bg-white/30 backdrop-blur-sm text-center font-mono text-xs outline-none transition-colors focus:bg-white/80 focus:border-white/60 [-moz-appearance:textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none shadow-inner text-black"
                   type="number"
                   min={1}
                   max={numPages}
@@ -354,19 +354,19 @@ export default function PDFReader({ fileUrl }: PDFReaderProps) {
                 />
 
                 {/* Tooltip for clicking pages */}
-                <div className="pointer-events-none absolute -top-14 left-1/2 -translate-x-1/2 w-max rounded-md bg-black/80 backdrop-blur-md px-3 py-2 text-xs text-white opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:bg-white/80 dark:text-black border border-white/10 dark:border-black/10">
+                <div className="pointer-events-none absolute -top-14 left-1/2 -translate-x-1/2 w-max rounded-md bg-black/80 backdrop-blur-md px-3 py-2 text-xs text-white opacity-0 transition-opacity duration-300 group-hover:opacity-100 border border-white/10">
                   ფურცლებზე დაჭერითაც შეგიძლიათ გადაფურცვლა
-                  <div className="absolute left-1/2 top-full -translate-x-1/2 border-[5px] border-transparent border-t-black/80 dark:border-t-white/80"></div>
+                  <div className="absolute left-1/2 top-full -translate-x-1/2 border-[5px] border-transparent border-t-black/80"></div>
                 </div>
               </div>
 
-              <span className="font-mono text-xs font-semibold text-black/80 dark:text-white/80">
+              <span className="font-mono text-xs font-semibold text-black/80">
                 / {numPages}
               </span>
             </div>
 
             <button
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/20 backdrop-blur-2xl border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.15)] text-black transition-all hover:scale-105 hover:bg-white/40 hover:text-black active:scale-95 disabled:pointer-events-none disabled:opacity-30 dark:bg-black/30 dark:border-white/5 dark:text-white dark:hover:bg-black/50 dark:hover:text-white drop-shadow-md"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/20 backdrop-blur-2xl border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.15)] text-black transition-all hover:scale-105 hover:bg-white/40 hover:text-black active:scale-95 disabled:pointer-events-none disabled:opacity-30 drop-shadow-md"
               onClick={nextPage}
               disabled={currentPage >= numPages || animating}
               aria-label="Next page"
@@ -376,7 +376,7 @@ export default function PDFReader({ fileUrl }: PDFReaderProps) {
 
             <button
               onClick={() => setIsMuted(!isMuted)}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/20 backdrop-blur-2xl border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.15)] text-black transition-all hover:scale-105 hover:bg-white/40 hover:text-black active:scale-95 dark:bg-black/30 dark:border-white/5 dark:text-white dark:hover:bg-black/50 dark:hover:text-white drop-shadow-md"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/20 backdrop-blur-2xl border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.15)] text-black transition-all hover:scale-105 hover:bg-white/40 hover:text-black active:scale-95 drop-shadow-md"
               aria-label={
                 isMuted ? "Unmute page flip sound" : "Mute page flip sound"
               }

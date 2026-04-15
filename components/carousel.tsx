@@ -79,12 +79,12 @@ function VideoCard({
         </div>
 
         {/* Title */}
-        <h3 className="font-cobalt text-[25px] leading-tight tracking-wide text-black dark:text-white mt-3 mb-1">
+        <h3 className="font-cobalt text-[25px] leading-tight tracking-wide text-black mt-3 mb-1">
           {title}
         </h3>
 
         {/* Description */}
-        <p className="font-alk-tall text-[18px] text-black/80 dark:text-white/55 leading-snug mt-2">
+        <p className="font-alk-tall text-[18px] text-black/80 leading-snug mt-2">
           {description}
         </p>
       </article>
@@ -112,9 +112,9 @@ function ArrowButton({
         "flex items-center justify-center",
         "absolute top-[40%] -translate-y-1/2 z-10",
         direction === "left" ? "-left-1 md:-left-12" : "-right-1 md:-right-12",
-        "text-black/85 dark:text-white/80",
-        "bg-white/40 dark:bg-black/40 rounded-full p-1 md:bg-transparent md:dark:bg-transparent md:p-0",
-        "hover:text-black dark:hover:text-white",
+        "text-black/85",
+        "bg-white/40 rounded-full p-1 md:bg-transparent md:p-0",
+        "hover:text-black",
         "disabled:opacity-20 disabled:cursor-not-allowed",
         "transition-all duration-300 ease-out hover:scale-110",
         "focus:outline-none",
@@ -179,7 +179,7 @@ export function Carousel() {
   return (
     <section className="w-full overflow-hidden px-4 md:px-10">
       {/* Heading */}
-      <h2 className="font-cobalt text-center text-5xl mb-6 tracking-wide text-black dark:text-white">
+      <h2 className="font-cobalt text-center text-5xl mb-6 tracking-wide text-black">
         ვიდეო
       </h2>
 
