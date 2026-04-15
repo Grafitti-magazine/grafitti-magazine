@@ -177,7 +177,7 @@ export function Carousel() {
   }, [emblaApi, onSelect]);
 
   return (
-    <section className="w-full px-4 md:px-10">
+    <section className="w-full overflow-hidden px-4 md:px-10">
       {/* Heading */}
       <h2 className="font-cobalt text-center text-5xl mb-6 tracking-wide text-black dark:text-white">
         ვიდეო

@@ -36,7 +36,6 @@ export default function PDFReader({ fileUrl }: PDFReaderProps) {
   const [pageWidth, setPageWidth] = useState<number>(600);
   const [pageHeight, setPageHeight] = useState<number>(848); // default A4 ratio
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [scale, setScale] = useState<number>(1);
   const [showControls, setShowControls] = useState<boolean>(true);
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -58,10 +57,22 @@ export default function PDFReader({ fileUrl }: PDFReaderProps) {
         const mobile = w < 768;
         setIsMobile(mobile);
 
-        // Let's deduce an optimal width/height for the book
+        // Keep the page fully visible on short laptop viewports.
         // Standard A4 aspect ratio is ~ 1:1.414
         const availableWidth = mobile ? w - 32 : (w - 64) / 2;
-        const wCapped = Math.min(availableWidth, 600);
+        const navbarHeight = 72; // matches h-18
+        const controlsReserve = mobile ? 108 : 104;
+        const verticalPadding = mobile ? 48 : 52;
+        const availableHeight = Math.max(
+          window.innerHeight - navbarHeight - controlsReserve - verticalPadding,
+          360,
+        );
+        const widthFromHeight = availableHeight / 1.414;
+        const wCapped = Math.max(
+          260,
+          Math.min(availableWidth, 600, widthFromHeight),
+        );
+
         setPageWidth(wCapped);
         setPageHeight(wCapped * 1.414);
       }
@@ -181,42 +192,18 @@ export default function PDFReader({ fileUrl }: PDFReaderProps) {
     return () => window.removeEventListener("keydown", handler);
   });
 
-  const progressPct =
-    numPages > 0 ? ((currentPage - 1) / (numPages - 1)) * 100 : 0;
-
   const isReading = currentPage > 1;
+  const readScale = isMobile ? 1.02 : pageWidth < 520 ? 1.06 : 1.09;
 
   return (
     <>
       <div
-        className="flex w-full flex-col font-serif text-gray-900 bg-transparent dark:text-gray-100"
+        className="relative isolate z-0 flex w-full flex-col bg-transparent font-serif text-gray-900 dark:text-gray-100"
         ref={containerRef}
         onMouseMove={resetControlsTimer}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
       >
-        {/* ── Progress ── */}
-        {numPages > 0 && currentPage > 1 && (
-          <div className="fixed bottom-0 left-0 right-0 z-50 flex h-2 gap-0.5 bg-black/10 dark:bg-white/5">
-            {Array.from({ length: numPages }).map((_, i) => {
-              const colors = ["#237375", "#9D2C2F", "#2B4A66", "#E6B92B"];
-              return (
-                <div
-                  key={i}
-                  className="h-full flex-1 transition-all duration-300"
-                  style={{
-                    backgroundColor:
-                      i < currentPage
-                        ? colors[i % colors.length]
-                        : "transparent",
-                    opacity: i < currentPage ? 0.8 : 0,
-                  }}
-                />
-              );
-            })}
-          </div>
-        )}
-
         {/* ── Document ── */}
         <div className="relative flex-1 overflow-visible touch-pan-y">
           <Document
@@ -240,19 +227,19 @@ export default function PDFReader({ fileUrl }: PDFReaderProps) {
           >
             {!isLoading && numPages > 0 && (
               <div
-                className={`flex justify-center p-4 lg:p-8 perspective-[2500px] transition-transform duration-700 ease-in-out origin-center relative ${isReading ? "z-40" : "z-10"}`}
+                className="relative z-0 flex origin-center justify-center p-4 perspective-[2500px] transition-transform duration-700 ease-in-out lg:p-8"
                 key={pageWidth}
                 style={{
                   transform:
                     !isMobile && !isReading
-                      ? `translateX(-${(pageWidth * scale) / 2}px) scale(1)`
-                      : `translateX(0px) scale(${isReading ? (isMobile ? 1.05 : 1.15) : 1})`,
+                      ? `translateX(-${pageWidth / 2}px) scale(1)`
+                      : `translateX(0px) scale(${isReading ? readScale : 1})`,
                 }}
               >
                 {/* @ts-ignore - react-pageflip typings are incomplete */}
                 <HTMLFlipBook
-                  width={pageWidth * scale}
-                  height={pageHeight * scale}
+                  width={pageWidth}
+                  height={pageHeight}
                   size="fixed"
                   minWidth={300}
                   maxWidth={1000}
@@ -273,7 +260,7 @@ export default function PDFReader({ fileUrl }: PDFReaderProps) {
                     <PageContainer key={index}>
                       <Page
                         pageNumber={index + 1}
-                        width={pageWidth * scale}
+                        width={pageWidth}
                         renderTextLayer={true}
                         renderAnnotationLayer={true}
                       />
