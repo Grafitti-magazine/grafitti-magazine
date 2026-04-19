@@ -238,11 +238,9 @@ export default function PDFReader({ fileUrl }: PDFReaderProps) {
                 className="relative z-0 flex origin-center justify-center p-4 perspective-[2500px] transition-transform duration-700 ease-in-out lg:p-8"
                 key={pageWidth}
                 style={{
-                  transform: isScrolled
-                    ? `translateX(0px) scale(${isReading ? readScale * 1.05 : 1.05})`
-                    : !isMobile && !isReading
-                      ? `translateX(-${pageWidth / 2}px) scale(1)`
-                      : `translateX(0px) scale(${isReading ? readScale : 1})`,
+                  transform: `translateX(${
+                    !isMobile && !isReading ? -(pageWidth / 2) : 0
+                  }px) scale(${isReading ? readScale : 1})`,
                 }}
               >
                 {/* @ts-ignore - react-pageflip typings are incomplete */}
