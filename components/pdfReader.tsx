@@ -46,8 +46,16 @@ export default function PDFReader({ fileUrl }: PDFReaderProps) {
   const [animating, setAnimating] = useState<boolean>(false);
   const [isMuted, setIsMuted] = useState<boolean>(false);
 
-  // Share state
+  const [isScrolled, setIsScrolled] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   // Responsive width
   useEffect(() => {
@@ -230,8 +238,9 @@ export default function PDFReader({ fileUrl }: PDFReaderProps) {
                 className="relative z-0 flex origin-center justify-center p-4 perspective-[2500px] transition-transform duration-700 ease-in-out lg:p-8"
                 key={pageWidth}
                 style={{
-                  transform:
-                    !isMobile && !isReading
+                  transform: isScrolled
+                    ? `translateX(0px) scale(${isReading ? readScale * 1.05 : 1.05})`
+                    : !isMobile && !isReading
                       ? `translateX(-${pageWidth / 2}px) scale(1)`
                       : `translateX(0px) scale(${isReading ? readScale : 1})`,
                 }}
@@ -276,7 +285,9 @@ export default function PDFReader({ fileUrl }: PDFReaderProps) {
         {numPages > 0 && currentPage > 1 && (
           <nav
             className={`fixed bottom-4 left-1/2 -translate-x-1/2 z-60 flex flex-row items-center justify-center gap-2 sm:gap-3 transition-all duration-300 ${
-              !showControls ? "pointer-events-none translate-y-4 opacity-0" : ""
+              !showControls || isScrolled
+                ? "pointer-events-none translate-y-4 opacity-0"
+                : ""
             }`}
           >
             {/* Share Button */}
