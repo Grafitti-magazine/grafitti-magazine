@@ -61,7 +61,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
       </div>
 
       {/* Divider */}
-      <div className="w-full border-t border-black mt-6" />
+      {/* <div className="w-full border-t border-black mt-6" /> */}
 
       {/* Carousel */}
       <div className="py-10">

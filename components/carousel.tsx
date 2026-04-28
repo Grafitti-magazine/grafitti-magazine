@@ -100,7 +100,7 @@ export function Carousel() {
   }, []);
 
   return (
-    <section className="w-full px-10">
+    <section className="w-full px-10 overflow-hidden">
       {/* Head */}
       <h2 className="font-cobalt text-center text-5xl mb-6 tracking-wide text-black dark:text-white">
         ვიდეო
@@ -160,7 +160,7 @@ export function Carousel() {
         {/* Scrollable row */}
         <div
           ref={scrollRef}
-          className="flex gap-12 overflow-x-auto pb-2"
+          className="flex flex-1 min-w-0 gap-12 overflow-x-auto pb-2"
           style={{
             scrollSnapType: "x mandatory",
             scrollbarWidth: "none",
