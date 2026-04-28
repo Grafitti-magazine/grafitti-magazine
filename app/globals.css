@@ -4,6 +4,7 @@
   --background: #ffffff;
   --foreground: #171717;
   --container-xs: 28rem;
+  color-scheme: light;
 }
 
 @theme inline {
@@ -13,15 +14,9 @@
   --font-cobalt: var(--font-cobalt);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-alk-tall), sans-serif;
+  overflow-x: hidden;
 }
