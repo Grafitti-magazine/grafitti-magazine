@@ -44,7 +44,7 @@ export function Footer() {
               <input
                 type="email"
                 placeholder="შეიყვანეთ თქვენი ელ.ფოსტა"
-                className="flex-1 bg-transparent text-black text-[16px] outline-none placeholder:text-black/40 min-w-0 translate-y-[2px]"
+                className="flex-1 bg-transparent text-black text-[16px] outline-none placeholder:text-black/40 focus:placeholder-transparent min-w-0 translate-y-[2px]"
               />
               <button className="font-cobalt bg-black text-white text-[19px] font-bold px-3 py-2 rounded-full hover:bg-black/80 transition-colors whitespace-nowrap shrink-0">
                 გამოწერა
@@ -60,7 +60,7 @@ export function Footer() {
               <input
                 type="email"
                 placeholder="მოგვწერე შენი სახელი და ელ.ფოსტა"
-                className="flex-1 bg-transparent text-black text-[16px] outline-none placeholder:text-black/40 min-w-0 translate-y-[2px]"
+                className="flex-1 bg-transparent text-black text-[16px] outline-none placeholder:text-black/40 focus:placeholder-transparent min-w-0 translate-y-[2px]"
               />
               <button className="font-cobalt bg-black text-white text-[19px] font-bold px-3 py-2 rounded-full hover:bg-black/80 transition-colors whitespace-nowrap shrink-0">
                 გაგზავნა

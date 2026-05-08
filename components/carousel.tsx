@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import useEmblaCarousel from "embla-carousel-react";
-import { videos } from "@/lib/data";
+import { videos } from "@/lib/data"; 
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -146,8 +146,8 @@ export function Carousel() {
     align: "start",
     slidesToScroll: 1,
     breakpoints: {
-      "(min-width: 1024px)": { slidesToScroll: 3 },
       "(min-width: 640px)": { slidesToScroll: 2 },
+      "(min-width: 1024px)": { slidesToScroll: 3 },
     },
   });
 
@@ -175,7 +175,7 @@ export function Carousel() {
   }, [emblaApi, onSelect]);
 
   return (
-    <section className="w-full overflow-hidden px-4 md:px-10">
+    <section className="w-full px-4 md:px-16">
       {/* Heading */}
       <h2 className="font-cobalt text-center text-5xl mb-6 tracking-wide text-black">
         ვიდეო
@@ -195,7 +195,7 @@ export function Carousel() {
 
         {/* Embla viewport */}
         <div className="overflow-hidden pb-6" ref={emblaRef}>
-          <div className="flex gap-6 lg:gap-12">
+          <div className="flex gap-6">
             {videos.map((video) => (
               <VideoCard
                 key={video.id}
