@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import useEmblaCarousel from "embla-carousel-react";
-import { videos } from "@/lib/data";
+import { videos } from "@/lib/data"; 
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -121,7 +121,7 @@ function ArrowButton({
       ].join(" ")}
     >
       <svg
-        className="w-8 h-8 md:w-11.25 md:h-11.25"
+        className="w-8 h-8 md:w-11 md:h-11"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -146,9 +146,8 @@ export function Carousel() {
     align: "start",
     slidesToScroll: 1,
     breakpoints: {
-      // On small screens scroll 1 at a time, on lg screens scroll 3
-      "(min-width: 1024px)": { slidesToScroll: 3 },
       "(min-width: 640px)": { slidesToScroll: 2 },
+      "(min-width: 1024px)": { slidesToScroll: 3 },
     },
   });
 
@@ -158,7 +157,6 @@ export function Carousel() {
   const scrollPrev = useCallback(() => emblaApi?.scrollPrev(), [emblaApi]);
   const scrollNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi]);
 
-  // Keep arrow disabled states in sync
   const onSelect = useCallback(() => {
     if (!emblaApi) return;
     setCanScrollPrev(emblaApi.canScrollPrev());
@@ -169,7 +167,7 @@ export function Carousel() {
     if (!emblaApi) return;
     emblaApi.on("select", onSelect);
     emblaApi.on("reInit", onSelect);
-    onSelect(); // run once on mount
+    onSelect();
     return () => {
       emblaApi.off("select", onSelect);
       emblaApi.off("reInit", onSelect);
@@ -177,7 +175,7 @@ export function Carousel() {
   }, [emblaApi, onSelect]);
 
   return (
-    <section className="w-full overflow-hidden px-4 md:px-10">
+    <section className="w-full px-4 md:px-16">
       {/* Heading */}
       <h2 className="font-cobalt text-center text-5xl mb-6 tracking-wide text-black">
         ვიდეო
@@ -197,8 +195,7 @@ export function Carousel() {
 
         {/* Embla viewport */}
         <div className="overflow-hidden pb-6" ref={emblaRef}>
-          {/* Embla container — gap is handled via padding on slides */}
-          <div className="flex gap-6 lg:gap-12">
+          <div className="flex gap-6">
             {videos.map((video) => (
               <VideoCard
                 key={video.id}

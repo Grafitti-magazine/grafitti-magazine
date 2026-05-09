@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { Sidebar } from "@/components/sidebar";
+import { Footer } from "@/components/footer";
 
 import "./globals.css";
 
@@ -37,6 +38,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col font-alk-tall">
         <Sidebar />
         {children}
+        <Footer />
       </body>
     </html>
   );
