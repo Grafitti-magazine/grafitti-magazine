@@ -5,18 +5,14 @@ import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 
-// Set up the worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 import HTMLFlipBook from "react-pageflip";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
 interface PDFReaderProps {
-  /** URL or base64 data URI of the PDF */
   fileUrl: string;
 }
 
-// ─── Forward Ref Page Wrapper ──────────────────────────────────────────────────
 const PageContainer = React.forwardRef<HTMLDivElement, any>((props, ref) => {
   return (
     <div
@@ -29,35 +25,29 @@ const PageContainer = React.forwardRef<HTMLDivElement, any>((props, ref) => {
 });
 PageContainer.displayName = "PageContainer";
 
-// ─── Component ───────────────────────────────────────────────────────────────
 export default function PDFReader({ fileUrl }: PDFReaderProps) {
   const [numPages, setNumPages] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageWidth, setPageWidth] = useState<number>(600);
-  const [pageHeight, setPageHeight] = useState<number>(848); // default A4 ratio
+  const [pageHeight, setPageHeight] = useState<number>(848);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [showControls, setShowControls] = useState<boolean>(true);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const controlsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const flipBookRef = useRef<any>(null); // reference to HTMLFlipBook
+  const flipBookRef = useRef<any>(null);
 
   const [isMobile, setIsMobile] = useState<boolean>(true);
   const [animating, setAnimating] = useState<boolean>(false);
   const [isMuted, setIsMuted] = useState<boolean>(false);
-
-  const [isScrolled, setIsScrolled] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
-    };
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  // Zoom state — applied only to the inner flipbook wrapper
+  const [zoomLevel, setZoomLevel] = useState<number>(1);
 
-  // Responsive width
+  // Pinch-to-zoom tracking
+  const lastPinchDist = useRef<number | null>(null);
+
   useEffect(() => {
     const measure = () => {
       if (containerRef.current) {
@@ -65,10 +55,8 @@ export default function PDFReader({ fileUrl }: PDFReaderProps) {
         const mobile = w < 768;
         setIsMobile(mobile);
 
-        // Keep the page fully visible on short laptop viewports.
-        // Standard A4 aspect ratio is ~ 1:1.414
         const availableWidth = mobile ? w - 32 : (w - 64) / 2;
-        const navbarHeight = 72; // matches h-18
+        const navbarHeight = 72;
         const controlsReserve = mobile ? 108 : 104;
         const verticalPadding = mobile ? 48 : 52;
         const availableHeight = Math.max(
@@ -91,14 +79,13 @@ export default function PDFReader({ fileUrl }: PDFReaderProps) {
     return () => ro.disconnect();
   }, []);
 
-  // Auto-hide controls on mobile after inactivity
   const resetControlsTimer = useCallback(() => {
     setShowControls(true);
     if (controlsTimerRef.current) clearTimeout(controlsTimerRef.current);
-    controlsTimerRef.current = setTimeout(() => setShowControls(false), 3000);
-  }, []);
+    const delay = isMobile ? 5000 : 3000;
+    controlsTimerRef.current = setTimeout(() => setShowControls(false), delay);
+  }, [isMobile]);
 
-  // Jump to URL param ?page on initial load
   const pageInitializedInfo = useRef(false);
   useEffect(() => {
     if (!pageInitializedInfo.current && numPages > 0) {
@@ -108,13 +95,12 @@ export default function PDFReader({ fileUrl }: PDFReaderProps) {
       if (pageParam) {
         const target = parseInt(pageParam, 10);
         if (!isNaN(target) && target >= 1 && target <= numPages) {
-          // Wait a brief moment to ensure HTMLFlipBook fully initializes
           setTimeout(() => {
             if (flipBookRef.current) {
               flipBookRef.current.pageFlip().turnToPage(target - 1);
               setCurrentPage(target);
             }
-          }, 400); // 400ms delay helps reliably bypass pageFlip undefined issues
+          }, 400);
         }
       }
     }
@@ -150,7 +136,6 @@ export default function PDFReader({ fileUrl }: PDFReaderProps) {
   };
 
   const flipAudioRef = useRef<HTMLAudioElement | null>(null);
-
   useEffect(() => {
     if (typeof window !== "undefined") {
       flipAudioRef.current = new Audio("/page-flip.mp3");
@@ -159,19 +144,16 @@ export default function PDFReader({ fileUrl }: PDFReaderProps) {
   }, []);
 
   const onFlip = useCallback((e: any) => {
-    setCurrentPage(e.data + 1); // e.data is the 0-indexed page index
+    setCurrentPage(e.data + 1);
   }, []);
 
   const onChangeState = useCallback(
     (e: any) => {
       const isFlipping = e.data === "flipping";
       setAnimating(isFlipping);
-
       if (isFlipping && flipAudioRef.current && !isMuted) {
-        // Reset sound to start and play
         flipAudioRef.current.currentTime = 0;
         flipAudioRef.current.play().catch((err) => {
-          // Ignore autoplay errors if user hasn't interacted yet
           console.debug("Autoplay prevented:", err);
         });
       }
@@ -179,18 +161,39 @@ export default function PDFReader({ fileUrl }: PDFReaderProps) {
     [isMuted],
   );
 
-  // Swipe support
+  // Swipe support (single finger only)
   const touchStartX = useRef<number>(0);
   const onTouchStart = (e: React.TouchEvent) => {
-    touchStartX.current = e.touches[0].clientX;
+    if (e.touches.length === 1) {
+      touchStartX.current = e.touches[0].clientX;
+    }
+    setShowControls(true);
     resetControlsTimer();
   };
+
   const onTouchEnd = (e: React.TouchEvent) => {
-    const dx = e.changedTouches[0].clientX - touchStartX.current;
-    if (Math.abs(dx) > 50) dx < 0 ? nextPage() : prevPage();
+    lastPinchDist.current = null;
+    if (e.changedTouches.length === 1) {
+      const dx = e.changedTouches[0].clientX - touchStartX.current;
+      if (Math.abs(dx) > 50) dx < 0 ? nextPage() : prevPage();
+    }
   };
 
-  // Keyboard
+  // Pinch-to-zoom — attached to the inner flipbook div only
+  const onFlipbookTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length !== 2) return;
+    e.preventDefault();
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (lastPinchDist.current !== null) {
+      const delta = dist - lastPinchDist.current;
+      setZoomLevel((prev) => Math.min(3, Math.max(1, prev + delta * 0.005)));
+    }
+    lastPinchDist.current = dist;
+  };
+
+  // Keyboard navigation
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "ArrowRight" || e.key === "ArrowDown") nextPage();
@@ -200,8 +203,21 @@ export default function PDFReader({ fileUrl }: PDFReaderProps) {
     return () => window.removeEventListener("keydown", handler);
   });
 
-  const isReading = currentPage > 1;
+  const isLastPage = numPages > 0 && currentPage === numPages;
   const readScale = isMobile ? 1.02 : pageWidth < 520 ? 1.06 : 1.09;
+
+  // Layout-shift transform (cover/last-page centering) — no zoom here
+  const layoutShiftX =
+    !isMobile && currentPage === 1
+      ? -(pageWidth / 2)
+      : !isMobile && isLastPage
+        ? pageWidth / 2
+        : 0;
+  const spreadScale = currentPage === 1 || isLastPage ? 1 : readScale;
+
+  const navHidden = !showControls
+    ? "pointer-events-none translate-y-4 opacity-0"
+    : "";
 
   return (
     <>
@@ -238,57 +254,63 @@ export default function PDFReader({ fileUrl }: PDFReaderProps) {
                 className="relative z-0 flex origin-center justify-center p-4 perspective-[2500px] transition-transform duration-700 ease-in-out lg:p-8"
                 key={pageWidth}
                 style={{
-                  transform: `translateX(${
-                    !isMobile && !isReading ? -(pageWidth / 2) : 0
-                  }px) scale(${isReading ? readScale : 1})`,
+                  transform: `translateX(${layoutShiftX}px) scale(${spreadScale})`,
+                  transformOrigin: "center center",
                 }}
               >
-                {/* @ts-ignore - react-pageflip typings are incomplete */}
-                <HTMLFlipBook
-                  width={pageWidth}
-                  height={pageHeight}
-                  size="fixed"
-                  minWidth={300}
-                  maxWidth={1000}
-                  minHeight={400}
-                  maxHeight={1500}
-                  maxShadowOpacity={0.15}
-                  flippingTime={600}
-                  showCover={true}
-                  mobileScrollSupport={true}
-                  onFlip={onFlip}
-                  onChangeState={onChangeState}
-                  className="mx-auto"
-                  style={{ margin: "0 auto" }}
-                  ref={flipBookRef}
-                  usePortrait={isMobile}
+                {/* Inner: zoom scoped to the journal only */}
+                <div
+                  style={{
+                    transform: `scale(${zoomLevel})`,
+                    transformOrigin: "center top",
+                    transition: "transform 0.25s ease",
+                    willChange: "transform",
+                  }}
+                  onTouchMove={onFlipbookTouchMove}
                 >
-                  {Array.from(new Array(numPages), (el, index) => (
-                    <PageContainer key={index}>
-                      <Page
-                        pageNumber={index + 1}
-                        width={pageWidth}
-                        renderTextLayer={true}
-                        renderAnnotationLayer={true}
-                      />
-                    </PageContainer>
-                  ))}
-                </HTMLFlipBook>
+                  {/* @ts-ignore */}
+                  <HTMLFlipBook
+                    width={pageWidth}
+                    height={pageHeight}
+                    size="fixed"
+                    minWidth={300}
+                    maxWidth={1000}
+                    minHeight={400}
+                    maxHeight={1500}
+                    maxShadowOpacity={0.15}
+                    flippingTime={600}
+                    showCover={true}
+                    mobileScrollSupport={true}
+                    onFlip={onFlip}
+                    onChangeState={onChangeState}
+                    className="mx-auto"
+                    style={{ margin: "0 auto" }}
+                    ref={flipBookRef}
+                    usePortrait={isMobile}
+                  >
+                    {Array.from(new Array(numPages), (el, index) => (
+                      <PageContainer key={index}>
+                        <Page
+                          pageNumber={index + 1}
+                          width={pageWidth}
+                          renderTextLayer={true}
+                          renderAnnotationLayer={true}
+                        />
+                      </PageContainer>
+                    ))}
+                  </HTMLFlipBook>
+                </div>
               </div>
             )}
           </Document>
         </div>
 
-        {/* ── Controls ── */}
-        {numPages > 0 && currentPage > 1 && (
+        {/* ── Main nav: share · prev · page# · next · sound (fits all screens) ── */}
+        {numPages > 0 && (
           <nav
-            className={`fixed bottom-4 left-1/2 -translate-x-1/2 z-60 flex flex-row items-center justify-center gap-2 sm:gap-3 transition-all duration-300 ${
-              !showControls || isScrolled
-                ? "pointer-events-none translate-y-4 opacity-0"
-                : ""
-            }`}
+            className={`fixed bottom-4 left-1/2 -translate-x-1/2 z-60 flex flex-row items-center justify-center gap-2 sm:gap-3 transition-all duration-300 ${navHidden}`}
           >
-            {/* Share Button */}
+            {/* Share */}
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -298,7 +320,7 @@ export default function PDFReader({ fileUrl }: PDFReaderProps) {
                 setCopied(true);
                 setTimeout(() => setCopied(false), 2000);
               }}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/20 backdrop-blur-2xl border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.15)] text-black transition-all hover:scale-105 hover:bg-white/40 hover:text-black active:scale-95 drop-shadow-md"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/20 backdrop-blur-2xl border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.15)] text-black transition-all hover:scale-105 hover:bg-white/40 active:scale-95 drop-shadow-md"
               aria-label="Share"
             >
               {copied ? (
@@ -311,7 +333,6 @@ export default function PDFReader({ fileUrl }: PDFReaderProps) {
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  className=""
                 >
                   <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
                   <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
@@ -328,17 +349,18 @@ export default function PDFReader({ fileUrl }: PDFReaderProps) {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 >
-                  <circle cx="18" cy="5" r="3"></circle>
-                  <circle cx="6" cy="12" r="3"></circle>
-                  <circle cx="18" cy="19" r="3"></circle>
-                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
-                  <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                  <circle cx="18" cy="5" r="3" />
+                  <circle cx="6" cy="12" r="3" />
+                  <circle cx="18" cy="19" r="3" />
+                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                  <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
                 </svg>
               )}
             </button>
 
+            {/* Prev */}
             <button
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/20 backdrop-blur-2xl border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.15)] text-black transition-all hover:scale-105 hover:bg-white/40 hover:text-black active:scale-95 disabled:pointer-events-none disabled:opacity-30 drop-shadow-md"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/20 backdrop-blur-2xl border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.15)] text-black transition-all hover:scale-105 hover:bg-white/40 active:scale-95 disabled:pointer-events-none disabled:opacity-30 drop-shadow-md"
               onClick={prevPage}
               disabled={currentPage <= 1 || animating}
               aria-label="Previous page"
@@ -346,6 +368,7 @@ export default function PDFReader({ fileUrl }: PDFReaderProps) {
               ←
             </button>
 
+            {/* Page number */}
             <div className="flex shrink-0 items-center justify-center gap-1.5 px-3 h-10 rounded-full bg-white/20 backdrop-blur-2xl border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.15)] drop-shadow-md">
               <div className="group relative flex items-center">
                 <input
@@ -361,21 +384,19 @@ export default function PDFReader({ fileUrl }: PDFReaderProps) {
                   disabled={animating}
                   aria-label="Jump to page"
                 />
-
-                {/* Tooltip for clicking pages */}
                 <div className="pointer-events-none absolute -top-14 left-1/2 -translate-x-1/2 w-max rounded-md bg-black/80 backdrop-blur-md px-3 py-2 text-xs text-white opacity-0 transition-opacity duration-300 group-hover:opacity-100 border border-white/10">
                   ფურცლებზე დაჭერითაც შეგიძლიათ გადაფურცვლა
                   <div className="absolute left-1/2 top-full -translate-x-1/2 border-[5px] border-transparent border-t-black/80"></div>
                 </div>
               </div>
-
               <span className="font-mono text-xs font-semibold text-black/80">
                 / {numPages}
               </span>
             </div>
 
+            {/* Next */}
             <button
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/20 backdrop-blur-2xl border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.15)] text-black transition-all hover:scale-105 hover:bg-white/40 hover:text-black active:scale-95 disabled:pointer-events-none disabled:opacity-30 drop-shadow-md"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/20 backdrop-blur-2xl border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.15)] text-black transition-all hover:scale-105 hover:bg-white/40 active:scale-95 disabled:pointer-events-none disabled:opacity-30 drop-shadow-md"
               onClick={nextPage}
               disabled={currentPage >= numPages || animating}
               aria-label="Next page"
@@ -383,9 +404,10 @@ export default function PDFReader({ fileUrl }: PDFReaderProps) {
               →
             </button>
 
+            {/* Sound toggle */}
             <button
               onClick={() => setIsMuted(!isMuted)}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/20 backdrop-blur-2xl border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.15)] text-black transition-all hover:scale-105 hover:bg-white/40 hover:text-black active:scale-95 drop-shadow-md"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/20 backdrop-blur-2xl border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.15)] text-black transition-all hover:scale-105 hover:bg-white/40 active:scale-95 drop-shadow-md"
               aria-label={
                 isMuted ? "Unmute page flip sound" : "Mute page flip sound"
               }
@@ -423,6 +445,79 @@ export default function PDFReader({ fileUrl }: PDFReaderProps) {
               )}
             </button>
           </nav>
+        )}
+
+        {/* ── Zoom controls: separate vertical pill, bottom-right corner ──
+            Kept separate from the main nav so it never overflows on narrow screens.
+            Tap the % badge to reset to 100%. */}
+        {numPages > 0 && (
+          <div
+            className={`fixed bottom-4 right-4 z-60 flex flex-col items-center gap-1.5 transition-all duration-300 ${navHidden}`}
+          >
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setZoomLevel((prev) =>
+                  Math.min(3, parseFloat((prev + 0.25).toFixed(2))),
+                );
+              }}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/20 backdrop-blur-2xl border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.15)] text-black transition-all hover:scale-105 hover:bg-white/40 active:scale-95 drop-shadow-md"
+              aria-label="Zoom in"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                <line x1="11" y1="8" x2="11" y2="14" />
+                <line x1="8" y1="11" x2="14" y2="11" />
+              </svg>
+            </button>
+
+            {zoomLevel !== 1 && (
+              <button
+                onClick={() => setZoomLevel(1)}
+                className="flex h-7 w-9 shrink-0 items-center justify-center rounded-full bg-white/30 backdrop-blur-2xl border border-white/30 shadow-[0_4px_16px_rgba(0,0,0,0.1)] text-black font-mono text-[10px] font-semibold transition-all hover:bg-white/50 active:scale-95 drop-shadow-md"
+                aria-label="Reset zoom"
+                title="Tap to reset zoom"
+              >
+                {Math.round(zoomLevel * 100)}%
+              </button>
+            )}
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setZoomLevel((prev) =>
+                  Math.max(1, parseFloat((prev - 0.25).toFixed(2))),
+                );
+              }}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/20 backdrop-blur-2xl border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.15)] text-black transition-all hover:scale-105 hover:bg-white/40 active:scale-95 drop-shadow-md"
+              aria-label="Zoom out"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                <line x1="8" y1="11" x2="14" y2="11" />
+              </svg>
+            </button>
+          </div>
         )}
       </div>
     </>
