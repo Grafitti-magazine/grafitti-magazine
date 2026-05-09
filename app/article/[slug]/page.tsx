@@ -22,7 +22,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
       <div className="max-w-5xl mx-auto px-6 pt-6 flex flex-col gap-1">
         <Link
           href="/"
-          className="inline-flex items-center gap-1.5 font-alk-tall text-[30px] text-black hover:opacity-60 transition-opacity duration-200 w-fit"
+          className="inline-flex items-center gap-1.5 font-alk-tall text-[30px] text-black hover:text-red-600 transition-opacity duration-200 w-fit"
         >
           <svg
             width="25"

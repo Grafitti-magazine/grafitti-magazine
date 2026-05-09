@@ -16,8 +16,8 @@ export default function Home() {
         </div>
 
         {/* გამყოფი ხაზი */}
-        <div className="w-full border-t border-black mt-10" />
       </div>
+      <div className="w-full border-t border-black mt-10" />
       <div className="py-10">
         <Carousel />
       </div>
