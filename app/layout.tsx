@@ -35,7 +35,7 @@ export default function RootLayout({
       lang="en"
       className={`${alkTallMtavruli.variable} ${cobaltDisplay.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col font-alk-tall">
+      <body className="min-h-full flex flex-col font-alk-tall" suppressHydrationWarning>
         <Sidebar />
         {children}
         <Footer />

@@ -48,6 +48,20 @@ export default function PDFReader({ fileUrl }: PDFReaderProps) {
   // Pinch-to-zoom tracking
   const lastPinchDist = useRef<number | null>(null);
 
+  // Handle empty PDF URL
+  if (!fileUrl || fileUrl.trim() === "") {
+    return (
+      <div className="w-full bg-gray-100 aspect-video flex items-center justify-center text-center text-gray-500 rounded-lg">
+        <div>
+          <p className="text-lg font-semibold">PDF Not Available</p>
+          <p className="text-sm text-gray-400 mt-2">
+            The PDF file could not be loaded. Please check that a PDF has been uploaded to WordPress.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   useEffect(() => {
     const measure = () => {
       if (containerRef.current) {

@@ -3,9 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import useEmblaCarousel from "embla-carousel-react";
-import { videos } from "@/lib/data"; 
+import type { VideoPost } from "@/lib/wordpress-service";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface VideoCardProps {
   date: string;
@@ -15,7 +14,26 @@ interface VideoCardProps {
   slug: string;
 }
 
-// ─── VideoCard ─────────────────────────────────────────────────────────────────
+interface CarouselProps {
+  videos: VideoPost[];
+}
+
+
+/**
+ * Format ISO date string to readable format (e.g., "28.02.26")
+ */
+function formatDate(isoDate: string): string {
+  try {
+    const date = new Date(isoDate);
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = String(date.getFullYear()).slice(-2);
+    return `${day}.${month}.${year}`;
+  } catch {
+    return isoDate;
+  }
+}
+
 
 function VideoCard({
   date,
@@ -37,11 +55,20 @@ function VideoCard({
 
         {/* Thumbnail + Play button */}
         <div className="relative w-full aspect-video bg-black overflow-hidden">
-          <img
-            src={thumbnail}
-            alt={title}
-            className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
-          />
+          {thumbnail.trim() ? (
+            <img
+              src={thumbnail}
+              alt={title}
+              className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
+            />
+          ) : (
+            <div
+              className="absolute inset-0 flex items-center justify-center bg-neutral-900 text-neutral-500 text-sm font-cobalt tracking-wide"
+              aria-hidden
+            >
+              ვიდეო
+            </div>
+          )}
 
           {/* Play button */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -92,7 +119,7 @@ function VideoCard({
   );
 }
 
-// ─── Arrow Button ──────────────────────────────────────────────────────────────
+
 
 function ArrowButton({
   direction,
@@ -139,9 +166,8 @@ function ArrowButton({
   );
 }
 
-// ─── Carousel ──────────────────────────────────────────────────────────────────
 
-export function Carousel() {
+export function Carousel({ videos }: CarouselProps) {
   const [emblaRef, emblaApi] = useEmblaCarousel({
     align: "start",
     slidesToScroll: 1,
@@ -174,6 +200,18 @@ export function Carousel() {
     };
   }, [emblaApi, onSelect]);
 
+
+  if (!videos || videos.length === 0) {
+    return (
+      <section className="w-full px-4 md:px-16">
+        <h2 className="font-cobalt text-center text-5xl mb-6 tracking-wide text-black">
+          ვიდეო
+        </h2>
+        <p className="text-center text-black/60">No videos available</p>
+      </section>
+    );
+  }
+
   return (
     <section className="w-full px-4 md:px-16">
       {/* Heading */}
@@ -199,7 +237,7 @@ export function Carousel() {
             {videos.map((video) => (
               <VideoCard
                 key={video.id}
-                date={video.date}
+                date={formatDate(video.publishedDate)}
                 title={video.title}
                 description={video.description}
                 thumbnail={video.thumbnail}

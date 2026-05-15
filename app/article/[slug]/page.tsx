@@ -1,8 +1,28 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Carousel } from "@/components/carousel";
-import { VideoPlayer } from "@/components/video-player";
-import { getVideoBySlug } from "@/lib/data";
+import { VideoEmbed } from "@/components/video-embed";
+import { getVideoBySlug, fetchVideoPosts } from "@/lib/wordpress-service";
+
+function ArticleDescription({ text }: { text: string }) {
+  const trimmed = text.trim();
+  if (!trimmed) return null;
+  const looksLikeHtml =
+    /^<[a-z!?]/i.test(trimmed) || /^<!--\s*wp:/i.test(trimmed);
+  if (looksLikeHtml) {
+    return (
+      <div
+        className="font-alk-tall text-[20px] text-black/90 leading-snug max-w-5xl [&_p]:mb-4 [&_a]:underline"
+        dangerouslySetInnerHTML={{ __html: trimmed }}
+      />
+    );
+  }
+  return (
+    <p className="font-alk-tall text-[20px] text-black/90 leading-snug max-w-5xl whitespace-pre-wrap">
+      {trimmed}
+    </p>
+  );
+}
 
 type ArticlePageProps = {
   params: Promise<{
@@ -12,9 +32,12 @@ type ArticlePageProps = {
 
 export default async function ArticlePage({ params }: ArticlePageProps) {
   const { slug } = await params;
-  const video = getVideoBySlug(slug);
+  const video = await getVideoBySlug(slug);
+  const allVideos = await fetchVideoPosts();
 
-  if (!video) notFound();
+  if (!video) {
+    notFound();
+  }
 
   return (
     <main className="min-h-screen bg-[#f5f5f3]">
@@ -40,12 +63,12 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
           <span className="transform: translate-y-1">უკან დაბრუნება</span>
         </Link>
 
-        {/* Video player */}
+        {/* Video player - now using embedded video URL from WordPress */}
         <div className="w-full">
-          <VideoPlayer
-            src={video.videoSrc}
-            poster={video.thumbnail}
+          <VideoEmbed
+            embedUrl={video.videoEmbedUrl}
             title={video.title}
+            thumbnail={video.thumbnail}
           />
         </div>
       </div>
@@ -55,9 +78,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
         <h1 className="font-cobalt text-5xl text-black leading-tight mb-6">
           {video.title}
         </h1>
-        <p className="font-alk-tall text-[20px] text-black/90 leading-snug max-w-5xl">
-          {video.fullDescription}
-        </p>
+        <ArticleDescription text={video.fullDescription} />
       </div>
 
       {/* Divider */}
@@ -65,7 +86,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
       {/* Carousel */}
       <div className="py-10">
-        <Carousel />
+        <Carousel videos={allVideos} />
       </div>
     </main>
   );
